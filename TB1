@@ -1,0 +1,52 @@
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    ContextTypes,
+    ConversationHandler,
+    filters
+)
+import logging
+import os
+
+# تنظیمات لاگ
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
+# مراحل گفتگو
+START, PHONE, NAME = range(3)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    keyboard = [[InlineKeyboardButton("✅ قبول قوانین", callback_data='accept')]]
+    await update.message.reply_text(
+        "📜 قوانین ربات...",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    return START
+
+# ... (بقیه توابع را اینجا قرار دهید)
+
+def main() -> None:
+    TOKEN = os.getenv('TOKEN')
+    app = Application.builder().token(TOKEN).build()
+    
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            START: [CallbackQueryHandler(request_phone, pattern='^accept$')],
+            PHONE: [MessageHandler(filters.CONTACT, get_phone)],
+            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)]
+        },
+        fallbacks=[]
+    )
+    
+    app.add_handler(conv_handler)
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
